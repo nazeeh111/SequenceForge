@@ -1,0 +1,205 @@
+import unittest
+import numpy
+from sequenceforge import Gotoh
+
+
+class TestGotoh(unittest.TestCase):
+    """Test suite for Gotoh global alignment algorithm"""
+
+    def setUp(self):
+        """Initialize algorithm for tests"""
+        self.algorithm = Gotoh()
+
+    def test_identical_sequences(self):
+        """Test behavior with identical sequences"""
+        # Test alignment
+        self.assertEqual(self.algorithm.align("ACTG", "ACTG"), "ACTG\nACTG")
+
+        # Test scoring
+        self.assertEqual(
+            self.algorithm.similarity("ACTG", "ACTG"), 4 * self.algorithm.match
+        )
+        self.assertEqual(self.algorithm.distance("ACTG", "ACTG"), 0.0)
+
+        # Test normalization
+        self.assertEqual(self.algorithm.normalized_similarity("ACTG", "ACTG"), 1.0)
+        self.assertEqual(self.algorithm.normalized_distance("ACTG", "ACTG"), 0.0)
+
+    def test_completely_different(self):
+        """Test behavior with completely different sequences"""
+        # Test alignment
+        self.assertEqual(self.algorithm.align("AAAA", "TTTT"), "AAAA\nTTTT")
+
+        # Test scoring
+        expected = -(4 * self.algorithm.mismatch)  # All positions are mismatches
+        self.assertEqual(self.algorithm.similarity("AAAA", "TTTT"), expected)
+
+        # Test normalization
+        self.assertEqual(self.algorithm.normalized_similarity("AAAA", "TTTT"), 0.0)
+        self.assertEqual(self.algorithm.normalized_distance("AAAA", "TTTT"), 1.0)
+
+    def test_empty_sequences(self):
+        """Test behavior with empty sequences"""
+        test_cases = [
+            ("", "ACTG"),  # Empty query
+            ("ACTG", ""),  # Empty subject
+            ("", ""),  # Both empty
+        ]
+
+        for query, subject in test_cases:
+            with self.subTest(query=query, subject=subject):
+                if query == subject == "":
+                    self.assertEqual(self.algorithm.align(query, subject), "\n")
+                    self.assertEqual(
+                        self.algorithm.similarity(query, subject),
+                        self.algorithm.match,
+                    )
+                    self.assertEqual(self.algorithm.distance(query, subject), 0.0)
+                else:
+                    non_empty = query or subject
+                    expected_gaps = "-" * len(non_empty)
+                    self.assertEqual(
+                        self.algorithm.align(query, subject),
+                        f"{expected_gaps if not query else query}\n{expected_gaps if not subject else subject}",
+                    )
+                    expected = -(
+                        self.algorithm.gap
+                        + len(non_empty) * self.algorithm.continued_gap
+                    )
+                    self.assertEqual(
+                        self.algorithm.similarity(query, subject), expected
+                    )
+
+    def test_single_character(self):
+        """Test behavior with single character sequences"""
+        # Test match
+        self.assertEqual(self.algorithm.align("A", "A"), "A\nA")
+        self.assertEqual(self.algorithm.similarity("A", "A"), self.algorithm.match)
+        self.assertEqual(self.algorithm.distance("A", "A"), 0.0)
+
+        # Test mismatch
+        self.assertEqual(self.algorithm.align("A", "T"), "A\nT")
+        expected = -self.algorithm.mismatch
+        self.assertEqual(self.algorithm.similarity("A", "T"), expected)
+
+    def test_case_sensitivity(self):
+        """Test that matching is case-insensitive"""
+        test_cases = [("ACTG", "actg"), ("AcTg", "aCtG"), ("actg", "ACTG")]
+
+        for query, subject in test_cases:
+            with self.subTest(query=query, subject=subject):
+                self.assertEqual(
+                    self.algorithm.align(query, subject),
+                    self.algorithm.align(query.upper(), subject.upper()),
+                )
+                self.assertEqual(
+                    self.algorithm.similarity(query, subject),
+                    self.algorithm.similarity(query.upper(), subject.upper()),
+                )
+
+    def test_matrix_shape(self):
+        """Test matrix dimensions"""
+        query = "ACTG"
+        subject = "ACT"
+        D, P, Q, pointer = self.algorithm(query, subject)
+        expected_shape = (len(query) + 1, len(subject) + 1)
+
+        self.assertEqual(D.shape, expected_shape)
+        self.assertEqual(P.shape, expected_shape)
+        self.assertEqual(Q.shape, expected_shape)
+        for matrix in pointer:
+            self.assertEqual(matrix.shape, expected_shape)
+
+    def test_gap_extension(self):
+        """Test gap extension behavior"""
+        query = "ACGTAGTC"
+        # Score with one gap of length 3
+        subject = "ACAGTC"
+        score1 = self.algorithm.similarity(query, subject)
+        self.assertEqual(self.algorithm.align(query, subject), "ACGTAGTC\nAC--AGTC")
+
+        # Score with two gaps of length 2 and 1 respectively
+        subject2 = "ACAGC"
+        score2 = self.algorithm.similarity(query, subject2)
+        self.assertEqual(self.algorithm.align(query, subject2), "ACGTAGTC\nAC--AG-C")
+
+        # One long gap should cost less than two short gaps
+        self.assertGreater(score1, score2)
+
+    def test_scoring_parameters(self):
+        """Test behavior with different scoring parameters"""
+        custom_algorithm = Gotoh(match=1, mismatch=2, new_gap=3, continued_gap=1)
+
+        # Test alignment
+        self.assertEqual(custom_algorithm.align("ACGT", "AGT"), "ACGT\nA-GT")
+
+        # Test that gap extension is cheaper than gap opening
+        query = "ACGT"
+        subject = "AT"
+        D, _, _, _ = custom_algorithm(query, subject)
+        expected_penalty = custom_algorithm.gap + 2 * custom_algorithm.continued_gap
+        expected_matches = 2 * custom_algorithm.match
+        self.assertEqual(D[-1, -1], expected_matches - expected_penalty)
+
+    def test_matrix_values(self):
+        """Test specific matrix values"""
+        D, P, Q, pointer = self.algorithm("AC", "AT")
+
+        # First row and column should reflect gap penalties
+        self.assertTrue(numpy.all(D[0, 1:] <= 0))  # First row
+        self.assertTrue(numpy.all(D[1:, 0] <= 0))  # First column
+
+        # Gap matrices initialization
+        self.assertTrue(numpy.all(P[:, 0] == 0))  # First column of P should be 0
+        self.assertTrue(numpy.all(Q[0, :] == 0))  # First row of Q should be 0
+        self.assertTrue(numpy.all(P[:, 1:] <= 0))  # Rest of P should be non-positive
+        self.assertTrue(numpy.all(Q[1:, :] <= 0))  # Rest of Q should be non-positive
+
+        # Test pointer values are valid
+        for matrix in pointer:
+            self.assertTrue(numpy.all(matrix >= 0))
+            self.assertTrue(numpy.all(matrix <= 9))  # Max valid pointer value
+
+    def test_normalization(self):
+        """Test normalization behavior"""
+        test_cases = [
+            ("ACTG", "ACTG", 1.0, 0.0),  # identical
+            ("ACTG", "AATG", 0.75, 0.25),  # one mismatch
+            ("ACTG", "AAAG", 0.5, 0.5),  # two mismatches
+            ("ACTG", "AAAA", 0.25, 0.75),  # three mismatches
+            ("ACTG", "VVVV", 0.0, 1.0),  # all mismatches
+        ]
+
+        for query, subject, exp_sim, exp_dist in test_cases:
+            with self.subTest(query=query, subject=subject):
+                self.assertAlmostEqual(
+                    self.algorithm.normalized_similarity(query, subject), exp_sim
+                )
+                self.assertAlmostEqual(
+                    self.algorithm.normalized_distance(query, subject), exp_dist
+                )
+
+    def test_all_alignments(self):
+        """Test returning multiple optimal alignments"""
+        test_cases = [
+            ("ACCG", "ACG", ["ACCG\nAC-G", "ACCG\nA-CG"], 2),
+            (
+                "ATGTGTA",
+                "ATA",
+                ["ATGTGTA\nAT----A", "ATGTGTA\nA----TA"],
+                2,
+            ),
+            ("ACGGCT", "ACT", ["ACGGCT\nAC---T", "ACGGCT\nA---CT"], 2),
+            ("CCGA", "CG", ["CCGA\nC--G", "CCGA\nCG--"], 2),
+        ]
+        for query, subject, alignments, length in test_cases:
+            with self.subTest(query=query, subject=subject):
+                res = self.algorithm.align(query, subject, all_alignments=True)
+                print(res)
+                self.assertEqual(length, len(res))
+                for alignment in alignments:
+                    self.assertIn(alignment, res)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,0 +1,19 @@
+# Verified development environment: Python 3.12, macOS ARM64
+Pygments==2.21.0
+biobase==0.9.1
+biopython==1.88
+black==25.12.0
+click==8.5.0
+flake8==7.3.0
+iniconfig==2.3.0
+mccabe==0.7.0
+mypy_extensions==1.1.0
+numpy==2.5.3
+packaging==26.3
+pathspec==1.1.1
+platformdirs==4.11.12
+pluggy==1.6.0
+pycodestyle==2.14.0
+pyflakes==3.4.0
+pytest==9.1.1
+pytokens==0.4.1

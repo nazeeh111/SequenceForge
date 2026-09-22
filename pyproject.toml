@@ -1,0 +1,38 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sequenceforge"
+version = "0.24.11"
+authors = [{ name = "nazeeh111" }]
+maintainers = [{ name = "nazeeh111" }]
+description = "Python implementation of several local, global, and multiple sequence alignment algorithms intended to calculate distance, show alignment, and display the underlying matrices."
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = ["biobase>=0.8.0", "biopython>=1.85", "numpy>=2.2.6"]
+
+[project.optional-dependencies]
+dev = ["pytest", "black"]
+
+[project.urls]
+Homepage = "https://github.com/nazeeh111/SequenceForge"
+Issues = "https://github.com/nazeeh111/SequenceForge/issues"
+
+[tool.hatch.build.sources]
+sequenceforge = "sequenceforge"
+
+[tool.hatch.build]
+include = ["sequenceforge/**/*.py", "goombay/**/*.py"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["sequenceforge", "goombay"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
