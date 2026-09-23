@@ -13,6 +13,8 @@ The [parity record](parity-results.json) contains counts and a hash of the compa
 
 ## Repeat checks
 
+The README development install includes pytest and Black. Install Flake8 before running the optional fatal-error check below: `python -m pip install flake8==7.3.0`. For the exact previously checked Python 3.12 environment, use `python -m pip install -r requirements-dev-lock.txt` from the repository root.
+
 ```bash
 python -m pytest -q
 python -m black --check sequenceforge goombay tests scripts
