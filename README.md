@@ -1,7 +1,5 @@
 # SequenceForge
 
-**Development history:** Developed locally using Git before publication. These projects were published to GitHub together, so similar upload dates do not indicate when development began.
-
 **Align sequences. Inspect every score.** A Python toolkit for global, local, and multiple sequence alignment, edit distances, overlap measures, and phylogenetic trees.
 
 [Algorithm reference](docs/API.md) · [Examples](examples) · [Verification](docs/VERIFICATION.md)
