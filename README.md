@@ -1,6 +1,6 @@
 # SequenceForge
 
-A Python toolkit for global, local, and multiple sequence alignment, edit distances, overlap measures, and phylogenetic trees.
+Compare sequences with ready-to-use alignment algorithms, then inspect the alignment, score or distance, and calculation matrix through a common Python interface. SequenceForge also includes overlap measures and phylogenetic trees. Methods vary by algorithm; the [reference table](docs/API.md#implementation) shows what each one supports.
 
 [Algorithm reference](docs/API.md) · [Examples](examples) · [Verification](docs/VERIFICATION.md)
 
@@ -11,17 +11,21 @@ git clone https://github.com/nazeeh111/SequenceForge.git
 cd SequenceForge
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -e ".[dev]"
+python -m pip install .
 ```
 
 Python 3.10 or later is required. Installation pulls NumPy, Biopython, and Biobase. This repository is the installation source; no separate package-registry release is implied.
 
 ```python
-from sequenceforge import needleman_wunsch, Gotoh
+from sequenceforge import needleman_wunsch
 
-print(needleman_wunsch.align("ACTG", "AATG"))
-print(needleman_wunsch.distance("ACTG", "AATG"))
-print(needleman_wunsch.matrix("ACTG", "AATG"))
+alignment = needleman_wunsch.align("ACGT", "AGT")
+print(alignment)
+# ACGT
+# A-GT
+
+scores = needleman_wunsch.matrix("ACGT", "AGT")
+assert len(scores) == 5 and len(scores[0]) == 4
 ```
 
 ## Choose the comparison
@@ -43,6 +47,6 @@ Classes expose configurable parameters; ready-to-use instances provide defaults.
 python -m pytest -q
 ```
 
-The primary namespace is `sequenceforge`; existing `goombay` imports remain supported through a compatibility package. Numerical algorithms, scoring defaults, returned alignment strings, and matrices are preserved. [Verification details](docs/VERIFICATION.md) distinguish tested parity from broader guarantees. Scoring and input limitations remain documented in the [algorithm caveats](docs/API.md#caveats).
+Install developer tools with `python -m pip install -e ".[dev]"` before running pytest. The primary namespace is `sequenceforge`; existing `goombay` imports remain supported through a compatibility package. Numerical algorithms, scoring defaults, returned alignment strings, and matrices are preserved. [Verification details](docs/VERIFICATION.md) distinguish tested parity from broader guarantees. Scoring and input limitations remain documented in the [algorithm caveats](docs/API.md#caveats).
 
 Maintained by [nazeeh111](https://github.com/nazeeh111).
