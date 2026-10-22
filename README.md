@@ -17,15 +17,18 @@ python -m pip install .
 Python 3.10 or later is required. Installation pulls NumPy, Biopython, and Biobase. This repository is the installation source; no separate package-registry release is implied.
 
 ```python
-from sequenceforge import needleman_wunsch
+from sequenceforge import (
+    needleman_wunsch as nw,
+)
 
-alignment = needleman_wunsch.align("ACGT", "AGT")
+alignment = nw.align("ACGT", "AGT")
 print(alignment)
 # ACGT
 # A-GT
 
-scores = needleman_wunsch.matrix("ACGT", "AGT")
-assert len(scores) == 5 and len(scores[0]) == 4
+scores = nw.matrix("ACGT", "AGT")
+assert len(scores) == 5
+assert len(scores[0]) == 4
 ```
 
 ## Choose the comparison
