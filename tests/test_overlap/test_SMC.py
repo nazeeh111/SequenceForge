@@ -6,6 +6,29 @@ class TestSimpleMatchingCoefficient(unittest.TestCase):
     def setUp(self):
         self.algorithm = SimpleMatchingCoefficient()
 
+    def test_matrix_counts_matches_and_mismatches(self):
+        for query, subject, expected in [
+            ("A", "B", [[0.0, 1.0]]),
+            ("ACGT", "ACGT", [[4.0, 0.0]]),
+            ("AAAA", "TTTT", [[0.0, 4.0]]),
+            ("aCgT", "ACGA", [[3.0, 1.0]]),
+        ]:
+            with self.subTest(query=query, subject=subject):
+                matrix = self.algorithm.matrix(query, subject)
+                self.assertEqual(matrix.shape, (1, 2))
+                self.assertEqual(matrix.tolist(), expected)
+                self.assertEqual(self.algorithm(query, subject).tolist(), expected)
+                self.assertEqual(
+                    self.algorithm.matrix(subject, query).tolist(), expected
+                )
+                self.assertEqual(matrix.sum(), len(query))
+                self.assertEqual(
+                    matrix[0, 0] / len(query), self.algorithm.similarity(query, subject)
+                )
+                self.assertEqual(
+                    matrix[0, 1] / len(query), self.algorithm.distance(query, subject)
+                )
+
     def test_identical_sequences(self):
         """Identical sequences should return perfect similarity and zero distance"""
         seq = "ACGT"

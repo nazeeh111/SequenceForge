@@ -1,301 +1,165 @@
 # SequenceForge algorithm reference
 
-All algorithms have a class with customizable parameters and a class instance with default parameters.
+This reference describes the retained implementation. Ready-to-use instances use the constructor defaults below; import classes when you need different parameters. `sequenceforge` is the primary namespace, and the `goombay` compatibility import remains available.
 
-Each algorithm is able to perform tasks such as alignment and displaying the underlying matrices.
-See the [Implementation](#implementation) table for details about which methods can be used with each algorithm.
+## Methods and returned objects
 
-The methods for the algorithms are:
+`distance`, `similarity`, `normalized_distance` and `normalized_similarity` are algorithm-specific numeric scores. They are not uniformly integers, mathematical distances or values bounded by zero and one. See [current limitations](#caveats).
 
-1. `.distance(seq1, seq2)` - integer value representing the distance between two sequences based on **match score**, **mismatch penalty**, and **gap penalties**.
+`align` also varies: pairwise edit aligners generally return a formatted string, with a list of strings when supported `all_alignments=True` is requested. Common-subsequence, common-substring and Ratcliff–Obershelp methods return motif lists; supersequence, prefix and postfix methods return a string. Feng–Doolittle returns joined aligned rows. Do not assume every aligner accepts the same keywords or uses the same no-match sentinel.
 
-2. `.similarity(seq1, seq2)` - integer value representing the similarity between two sequences based on **match score**, **mismatch penalty**, and **gap penalties**.
+## Implementation
 
-3. `.normalized_distance(seq1, seq2)` - float between `0` and `1`; `0` representing two identical sequences and `1` representing two sequences with no similarities.
+Classes and instances below are exported by `sequenceforge`. All listed pairwise methods expose the four score methods, subject to their input and normalization limitations.
 
-4. `.normalized_similarity(seq1, seq2)` - float between `0` and `1`; `1` representing two identical sequences and `0` representing two sequences with no similarities.
+| Class | Default instance | `.matrix` result |
+| --- | --- | --- |
+| `NeedlemanWunsch` | `needleman_wunsch` | `(scores, pointers)` |
+| `Gotoh` | `gotoh` | `(D, P, Q)` score arrays |
+| `GotohLocal` | `gotoh_local` | `(D, P, Q)` score arrays |
+| `SmithWaterman` | `smith_waterman` | `(scores, pointers)` |
+| `WatermanSmithBeyer` | `waterman_smith_beyer` | `(scores, pointers)` |
+| `WatermanSmithBeyerLocal` | `wsb_local` | `(scores, pointers)` |
+| `WagnerFischer` | `wagner_fischer` | `(scores, pointers)` |
+| `LowranceWagner` | `lowrance_wagner` | `(scores, pointers)` |
+| `Hirschberg` | `hirschberg` | Small full matrix if either input length is at most one; otherwise a `(1, 0)` placeholder |
+| `Hamming` | `hamming` | `None` |
+| `Jaro` | `jaro` | One array |
+| `JaroWinkler` | `jaro_winkler` | One array |
+| `LongestCommonSubsequence` | `longest_common_subsequence` | One array |
+| `LongestCommonSubstring` | `longest_common_substring` | One array |
+| `ShortestCommonSupersequence` | `shortest_common_supersequence` | One array |
+| `LIPNS` | `lipns` | One array |
+| `MLIPNS` | `mlipns` | One array |
+| `Hamann` | `hamann` | One array |
+| `SimpleMatchingCoefficient` | `simple_matching_coefficient` | One-row match/mismatch count matrix; scalar comparisons require nonempty, equal-length inputs |
+| `LengthRatio` | `length_ratio` | One array |
+| `Prefix` | `prefix` | One array |
+| `Postfix` | `postfix` | One array |
+| `RatcliffObershelp` | `ratcliff_obershelp` | No method |
 
-5. `.align(seq1, seq2)` - formatted string of the alignment between the provided sequences.
+`FengDoolittle` / `feng_doolittle` provides multiple alignment; calling the instance returns `(profiles, distance_matrix)`. `LongestCommonSubstringMSA` / `longest_common_substring_msa` provides common-substring multiple alignment and score methods, with no `.matrix` method. Tree helpers `NeighborJoining` and `NewickFormatter` live in `sequenceforge.phylo`; both accept `dist_matrix`. `NeighborJoining.generate_newick()` produces Newick output; `NewickFormatter.parse_newick(newick)` parses a Newick string.
 
-6. `.matrix(seq1, seq2)` - matrix (or matrices) created through the dynamic programming process.
+Calling Gotoh or GotohLocal directly additionally returns a fourth tuple containing three pointer arrays. For Needleman–Wunsch, calling directly and using `.matrix` both return the score/pointer pair.
 
-The Hamming distance has two additional methods called `.binary_distance_array` and `.binary_similarity_array` that produce a list of bits denoting which pairwise combinations are a match and which are a mismatch.
+## Constructor keywords and defaults
 
----
+These are actual accepted keyword names. Older examples using `match_score`, `mismatch_penalty`, `gap_penalty` or `scoring_matrix` do not match the current constructors.
 
-The `scoring_matrix` keyword argument accepts a substitution matrix from the [Biobase](https://github.com/lignum-vitae/biobase) package.
+| Class | Defaults |
+| --- | --- |
+| `NeedlemanWunsch` | `match=2, mismatch=1, gap=2, substitution_matrix=None` |
+| `Gotoh` | `match=1, mismatch=1, new_gap=3, continued_gap=1, substitution_matrix=None` |
+| `GotohLocal` | `match=2, mismatch=1, new_gap=3, continued_gap=2, substitution_matrix=None` |
+| `SmithWaterman` | `match=1, mismatch=1, gap=2` |
+| `WatermanSmithBeyer`, `WatermanSmithBeyerLocal` | `match=1, mismatch=1, new_gap=3, continued_gap=1, substitution_matrix=None, gap_function="affine"` |
+| `Hirschberg` | `match=1, mismatch=2, gap=4, substitution_matrix=None` |
+| `FengDoolittle` | `cluster="nj", pairwise="nw", substitution_matrix=None` |
+| `JaroWinkler` | `scaling_factor=0.1` |
+| `LIPNS` | `threshold=0.25` |
+| `MLIPNS` | `max_mismatch=2` |
 
-The following algorithms accept the `scoring_matrix` keyword argument as a parameter:
+The other comparison classes take no constructor arguments. Waterman–Smith–Beyer also accepts `gap_function="quadratic"`, `"log"` or `"logarithmic"`; invalid names raise `ValueError` when scoring invokes the function. Use lowercase names or aliases for Feng–Doolittle's algorithm selection.
 
-- NeedlemanWunsch
-- WatermanSmithBeyer
-- Hirschberg
-- FengDoolittle (only applies to above mentioned pairwise algorithms)
+Substitution matrices use nested residue lookup, `matrix[a][b]`; callers must supply an appropriate alphabet. NeedlemanWunsch, Gotoh, GotohLocal, both WatermanSmithBeyer classes and Hirschberg accept `substitution_matrix`. FengDoolittle forwards one to supported pairwise implementations. Biobase matrices are supported by existing examples and tests. Choose gap costs appropriate to that matrix; a shared numeric scale or valid normalization is not guaranteed across all custom settings. See `tests/test_edit/test_SubMatrix.py`.
 
-# Implementation
+## Inspect an alignment
 
-<details>
-<summary>Table of the methods implemented for each algorithm as well as the class (customizable) and instance (default parameters) names.</summary>
+```python
+from sequenceforge import needleman_wunsch as nw
 
-| Algorithm                     | Alignment             | Matrices              | Distance/Similarity/Normalized  | Class                       | Instance                      |
-| ----------------------------- | --------------------- | --------------------- | ------------------------------- | --------------------------- | ----------------------------- |
-|Needleman-Wunsch               |<ul><li> [x] </li></ul>|<ul><li> [x] </li></ul>|     <ul><li> [x] </li></ul>     | Needleman_Wunsch            | needleman_wunsch              |
-|Gotoh (Global)                 |<ul><li> [x] </li></ul>|<ul><li> [x] </li></ul>|     <ul><li> [x] </li></ul>     | Gotoh                       | gotoh                         |
-|Gotoh (Local)                  |<ul><li> [x] </li></ul>|<ul><li> [x] </li></ul>|     <ul><li> [x] </li></ul>     | GotohLocal                  | gotoh_local                   |
-|Smith-Waterman                 |<ul><li> [x] </li></ul>|<ul><li> [x] </li></ul>|     <ul><li> [x] </li></ul>     | SmithWaterman               | smith_waterman                |
-|Waterman-Smith-Beyer           |<ul><li> [x] </li></ul>|<ul><li> [x] </li></ul>|     <ul><li> [x] </li></ul>     | WatermanSmithBeyer          | waterman_smith_beyer          |
-|Wagner-Fischer                 |<ul><li> [x] </li></ul>|<ul><li> [x] </li></ul>|     <ul><li> [x] </li></ul>     | WagnerFischer               | wagner_fischer                |
-|Lowrance-Wagner                |<ul><li> [x] </li></ul>|<ul><li> [x] </li></ul>|     <ul><li> [x] </li></ul>     | LowranceWagner              | lowrance_wagner               |
-|Feng-Doolittle                 |<ul><li> [x] </li></ul>|<ul><li> [ ] </li></ul>|     <ul><li> [ ] </li></ul>     | FengDoolittle               | feng_doolittle                |
-|Hamming                        |<ul><li> [x] </li></ul>|<ul><li> [ ] </li></ul>|     <ul><li> [x] </li></ul>     | Hamming                     | hamming                       |
-|Hirschberg                     |<ul><li> [x] </li></ul>|<ul><li> [x] </li></ul>|     <ul><li> [x] </li></ul>     | Hirschberg                  | hirschberg                    |
-|Jaro                           |<ul><li> [x] </li></ul>|<ul><li> [x] </li></ul>|     <ul><li> [x] </li></ul>     | Jaro                        | jaro                          |
-|Jaro Winkler                   |<ul><li> [x] </li></ul>|<ul><li> [x] </li></ul>|     <ul><li> [x] </li></ul>     | JaroWinkler                 | jaro_winkler                  |
-|Longest Common Subsequence     |<ul><li> [x] </li></ul>|<ul><li> [x] </li></ul>|     <ul><li> [x] </li></ul>     | LongestCommonSubsequence    | longest_common_subsequence    |
-|Longest Common Substring       |<ul><li> [x] </li></ul>|<ul><li> [x] </li></ul>|     <ul><li> [x] </li></ul>     | LongestCommonSubstringMSA   | longest_common_substring_msa  |
-|Longest Common Substring (MSA) |<ul><li> [x] </li></ul>|<ul><li> [ ] </li></ul>|     <ul><li> [x] </li></ul>     | LongestCommonSubstringMSA   | longest_common_substring_msa  |
-|Shortest Common Supersequence  |<ul><li> [x] </li></ul>|<ul><li> [x] </li></ul>|     <ul><li> [x] </li></ul>     | ShortestCommonSupersequence | shortest_common_supersequence |
-|LIPNS                          |<ul><li> [x] </li></ul>|<ul><li> [x] </li></ul>|     <ul><li> [x] </li></ul>     | LIPNS                       | lipns                         |
-|MLIPNS                         |<ul><li> [x] </li></ul>|<ul><li> [x] </li></ul>|     <ul><li> [x] </li></ul>     | MLIPNS                      | mlipns                        |
-|Hamann                         |<ul><li> [x] </li></ul>|<ul><li> [x] </li></ul>|     <ul><li> [x] </li></ul>     | Hamann                      | hamann                        |
-|Simple Matching Coefficient    |<ul><li> [x] </li></ul>|<ul><li> [x] </li></ul>|     <ul><li> [x] </li></ul>     | SimpleMatchingCoefficient   | simple_matching_coefficient   |
-|Length Ratio                   |<ul><li> [x] </li></ul>|<ul><li> [x] </li></ul>|     <ul><li> [x] </li></ul>     | LengthRatio                 | length_ratio                  |
-|Prefix                         |<ul><li> [x] </li></ul>|<ul><li> [x] </li></ul>|     <ul><li> [x] </li></ul>     | Prefix                      | prefix                        |
-|Postfix                        |<ul><li> [x] </li></ul>|<ul><li> [x] </li></ul>|     <ul><li> [x] </li></ul>     | Postfix                     | postfix                       |
-|Ratcliff Obershelp             |<ul><li> [x] </li></ul>|<ul><li> [ ] </li></ul>|     <ul><li> [x] </li></ul>     | RatcliffObershelp           | ratcliff_obershelp            |
+print(nw.align("ACGT", "AGT"))
+# ACGT
+# A-GT
+assert nw.similarity("ACGT", "AGT") == 4
+scores, pointers = nw.matrix("ACGT", "AGT")
+assert scores.shape == pointers.shape == (5, 4)
+print(scores)
+# [[ 0. -2. -4. -6.]
+#  [-2.  2.  0. -2.]
+#  [-4.  0.  1. -1.]
+#  [-6. -2.  2.  0.]
+#  [-8. -4.  0.  4.]]
+```
 
-</details>
+![Returned alignment and score matrix](alignment-example.svg)
 
-## Algorithms Explained
+The [example data](alignment-example.json) records exact scores, pointers, parameters and source hashes. Its generation used the unchanged base/edit modules directly with NumPy; it does not establish installed-package or Biopython integration.
 
-<details>
-  <summary>Brief overview of algorithms</summary>
-
-- [Hamming](https://en.wikipedia.org/wiki/Hamming_distance) -
-  The Hamming distance is a distance measurement between two sequences of the same length which measures the minimum number of substitutions 
-  needed to convert one string into the other.
-  When comparing numbers, the hamming distance first converts the numbers into binary and then determines the minimum number of bits that need to be flipped to turn
-  one binary sequence into the other.
-  The hamming distance can only be calculated between strings of the same length. Numbers will be padded with 0 to match the longer binary sequence.
-
-- [Wagner-Fischer](https://en.wikipedia.org/wiki/Wagner%E2%80%93Fischer_algorithm) - **Levenshtein distance** -
-  The Wagner-Fischer algorithm is a global alignment algorithm that computes the Levenshtein distance between two sequences.
-  This algorithm has an invariable gap penalty of 1 and a mismatch (or substitution) cost of 1. Matches are worth 0 therefore they do not affect the score.
-  - The keyword argument for the align method for this algorithm is `all_alignments: bool = False`
-
-- [Lowrance-Wagner](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-019-2819-0) - **Damerau–Levenshtein distance**
-  The Lowrance-Wagner algorithm is a global alignment algorithm that computes the Levenshtein distance between two sequences 
-  with the addition of adjacent swapping between matching adjacent characters.
-  Like the Wagner-Fischer algorithm, there's an invariable gap penalty and mismatch penalty of 1. Matches are worth 0 and do not affect the score.
-  In addition to these penalties, there's an invariable transposition penalty cost of 1.
-  - The keyword argument for the align method for this algorithm is `all_alignments: bool = False`
-
-- [Needleman-Wunsch](https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm) -
-  The Needleman-Wunsch algorithm is a global alignment algorithm that uses a generalized form of the Levenshtein distance 
-  which allows for different weights to be given to matches, mismatches, and gaps.
-  - The keyword arguments for the class of this algorithm are `match_score:int = 2`, `mismatch_penalty:int = 1`, and `gap_penalty:int = 2`.
-  - The keyword argument for the align method for this algorithm is `all_alignments: bool = False`
-
-- [Gotoh (Global)](https://helios2.mi.parisdescartes.fr/~lomn/Cours/BI/Material/gap-penalty-gotoh.pdf) -
-  The Gotoh algorithm is a global alignment algorithm that is a modification to the Levenshtein distance that uses an affine gap penalty
-  (similar to the Waterman-Smith-Beyer algorithm)
-  that differentiates between newly created gaps and continuations of gaps.
-  This algorithm uses three matrices; ***D*** (optimal score under affine gap penalties), ***P*** (optimal score given that query sequence ends in a gap), and 
-  ***Q*** (optimal score given that subject sequence ends in a gap).
-  - The keyword arguments for the class of this algorithm are `match_score:int = 2`, `mismatch_penalty:int = 1`, `new_gap_penalty:int = 2`, and `continue_gap_penalty: int = 1`.
-  - The keyword argument for the align method for this algorithm is `all_alignments: bool = False`
-
-- [Gotoh (Local)](http://rna.informatik.uni-freiburg.de/Teaching/index.jsp?toolName=Gotoh%20(Local)) -
-  Similar to the global alignment version of the Gotoh alignment algorithm, the local alignment version also uses three matrices.
-  The primary difference is that the optimal alignment score is chosen between applying a penalty for either a mismatch or gap, adding to the total for a match, or zero.
-  This allows the cell to be reset to zero if it were to become negative.
-  - The keyword arguments for the class of this algorithm are `match_score:int = 2`, `mismatch_penalty:int = 1`, `new_gap_penalty:int = 3`, and `continue_gap_penalty: int = 2`.
-  - The keyword argument for the align method for this algorithm is `all_alignments: bool = False`
-
-- [Smith-Waterman](https://en.wikipedia.org/wiki/Smith%E2%80%93Waterman_algorithm) -
-  The Smith-Waterman algorithm is the local alignment equivalent to the Needleman-Wunsch algorithm. Similar to Needleman-Wunsch, it generalizes the Levenshtein distance.
-  Similar to the Gotoh local algorithm, it resets any negative cell to zero.
-  - The keyword arguments for this algorithm are `match_score:int = 1`, `mismatch_penalty:int = 1`, and `gap_penalty:int = 2`.
-  - The keyword argument for the align method for this algorithm is `all_alignments: bool = False`
-
-- [Waterman-Smith-Beyer](http://rna.informatik.uni-freiburg.de/Teaching/index.jsp?toolName=Waterman-Smith-Beyer) -
-  The Waterman-Smith-Beyer algorithm is a global alignment algorithm that is a modification to the Levenshtein distance which uses an arbitrary gap-scoring method.
-  The specific implementation used in this package is the affine gap penalty.
-  However, a logarithmic or a quadratic gap calculation can also be performed.
-  - The keyword arguments for the class of this algorithm are `match_score:int = 2`, `mismatch_penalty:int = 1`, `new_gap_penalty:int = 4`, and `continue_gap_penalty:int = 1`.
-  - The keyword argument for the align method for this algorithm is `all_alignments: bool = False`
-
-- [Hirschberg](https://en.wikipedia.org/wiki/Hirschberg%27s_algorithm) -
-  The Hirschberg algorithm is intended to improve the Needleman-Wunsch algorithm by using recursion to improve space efficiency.
-  It uses a method known as divide and conquer to compare the two sequences.
-  - The keyword arguments for this algorithm are `match_score: int = 1`, `mismatch_penalty: int = 2`, and `gap_penalty: int = 4`.
-
-- [Feng Doolittle](https://www.cs.auckland.ac.nz/compsci369s1c/lectures/DW-notes/lecture21.pdf) -
-  The Feng Doolittle algorithm is a progressive multiple sequence alignment algorithm
-  that uses a pairwise implementation such as Needleman Wunsch to determine a distance
-  matrix and a clustering algorithm such as the neighbour joining algorithm to determine
-  the final alignment.
-  - The keyword arguments for the class instantiation are `cluster: str = neighbor_joining` and `pairwise: str = needleman_wunsch`
-  - The keyword argument for the align method is `verbose: bool = False`
-
-- [Jaro & Jaro-Winkler](https://en.wikipedia.org/wiki/Jaro%E2%80%93Winkler_distance) -
-  The Jaro algorithm is a global alignment algorithm that measures the Jaro distance between two sequences. It produces a number between 0 and 1 that accounts
-  for the length of the strings, the number of matching characters, and the number of transpositions. The Jaro algorithm also takes into consideration matches
-  that are a certain distance away ((max sequence length/2)-1). Of these matches, transpositions (matches that aren't in the right order) are factored in.
-
-  The Jaro-Winkler algorithm is the same as the Jaro algorithm but also favors sequences that have matching prefix characters (up to four) and adds a scaling factor.
-  - The keyword argument for the Jaro-Winkler algorithm is `scaling_factor = 0.1`. The scaling factor should not exceed 0.25 or else it may be possible for the similarity score to be greater than 1.
-
-- [Longest Common Subsequence](https://en.wikipedia.org/wiki/Longest_common_subsequence) -
-  The Longest Common Subsequence algorithm generates an alignment by only allowing deletes while not changing the relative order of the characters.
-  There may be more than one longest subsequence, in which case, all longest
-  subsequences will be shown in a list. Only matches with a length greater than 1 will be shown.
-
-- [Longest Common Substring](https://en.wikipedia.org/wiki/Longest_common_substring) -
-  The Longest Common Substring algorithm generates an alignment by finding the longest string that is present in all given sequences.
-  Insertions and deletions are not allowed within these strings. There may be
-  more than one longest substring, in which case all longest substrings will be shown in a list.
-  Only matches with a length greater than 1 will be shown when aligned.
-  Matches less than or equal to 1 will return a similarity and distance score of 0.
-
-- [Shortest Common Supersequence](https://en.wikipedia.org/wiki/Shortest_common_supersequence) -
-  The Shortest Common Supersequence is the shortest combination of the two sequences that contains all the characters within both sequences
-  and does not change the relative order of the characters.
-
-- [Language Independent Product Name Search](http://www.sial.iias.spb.su/files/386-386-1-PB.pdf) -
-  LIPNS is an algorithm that determines the similarity between two strings.
-  The "is similar" method returns the intended output of the algorithm,
-  either True or False (1 or 0 respectively).
-  - The keyword argument for LIPNS is `threshold = 0.25`
-
-- [Modfied Language Independent Product Name Search](http://www.sial.iias.spb.su/files/386-386-1-PB.pdf) -
-  MLIPNS is a modification to this algorithm that takes into account the number
-  of deletions necessary to get from one word to another. A maximum number of deletions
-  is allowed before the words are considered to be not similar to each other.
-  - The keyword argument for MLIPNS is `max_mismatch = 2`
-
-- [Hamann](https://modbase.compbio.ucsf.edu/pibase/suppinfo/supplementary_info.pdf) -
-  The Hamann algorithm is similar to the SMC algorithm, but also takes into account
-  mismatches when calculating its score.
-
-- [Simple Matching Coefficient](https://en.wikipedia.org/wiki/Simple_matching_coefficient) -
-  The simple matching coefficient is the number of matching attributes divided by
-  the total number of attributes. The SMC is also equal to the Hamann similarity
-  plus 1 divided by two.
-
-- **Length Ratio** -
-  The length ratio algorithm is a simple algorithm that compares the length of the
-  shorter sequence to the length of the longer sequence.
-
-- **Prefix** -
-  The prefix algorithm measures the number of contiguous matches from the beginning of a string.
-
-- **Postfix** -
-  The Postfix algorithm measures the number of contiguous matches from the end of a string.
-
-- [Ratcliff Obershelp](https://en.wikipedia.org/wiki/Gestalt_pattern_matching) -
-  The Ratcliff Obershelp algorithm determines the similarity of two or more strings
-  by multiplying two by the matching characters and dividing this product by the total
-  number of characters in both strings. The matching characters are found by progressive
-  iterations of finding the longest common substring.
-
-</details>
-
-# Code Examples
-
-**Hamming Distance**
+For equal-length nonempty strings, Hamming provides positional comparisons:
 
 ```python
 from sequenceforge import hamming
 
-qs = "AFTG"
-ss = "ACTG"
-
-print(hamming.distance(qs, ss))
-# 1
-print(hamming.similarity(qs, ss))
-# 3
-print(hamming.binary_distance_array(qs, ss))
-# [0,1,0,0]
-print(hamming.binary_similarity_array(qs, ss))
-# [1,0,1,1]
-print(hamming.normalized_distance(qs, ss))
-# 0.25
-print(hamming.normalized_similarity(qs, ss))
-# 0.75
+assert hamming.distance("AFTG", "ACTG") == 1
+assert hamming.similarity("AFTG", "ACTG") == 3
+assert hamming.binary_distance_array("AFTG", "ACTG") == [0, 1, 0, 0]
+assert hamming.normalized_distance("AFTG", "ACTG") == 0.25
+assert hamming.binary_similarity_array("AFTG", "ACTG") == [1, 0, 1, 1]
+assert hamming.normalized_similarity("AFTG", "ACTG") == 0.75
 ```
 
-**Needleman-Wunsch**
+## Algorithm distinctions
+
+Global aligners score the full sequences; local aligners search for high-scoring regions. Wagner–Fischer computes unit-cost insertion/deletion/substitution distance. The retained Lowrance–Wagner implementation uses a restricted adjacent-swap recurrence: it must not be assumed to compute unrestricted Damerau–Levenshtein distance (`CA` → `ABC` returns 3, while an unrestricted two-edit path exists).
+
+Subsequence alignment preserves character order while allowing gaps; substring alignment requires contiguous characters. Their alignment helpers suppress length-one motifs by default, and their scalar edge conventions differ. ShortestCommonSupersequence returns a containing supersequence, but its `.distance` is insertion/deletion edit cost, not supersequence length minus the longer input length.
+
+Jaro-family scores account for nearby matches and transpositions; Jaro–Winkler adds a prefix adjustment. Hamann similarity can be negative. LengthRatio compares lengths. Prefix and Postfix compare contiguous end matches. LIPNS and MLIPNS expose fractional score methods plus `.is_similar` for a binary decision.
+
+### Read the dynamic-programming choices
+
+For Needleman–Wunsch, cell `S[i,j]` scores the two prefixes ending at query position `i` and subject position `j`. Each cell takes the best of a diagonal character comparison, a vertical gap and a horizontal gap:
+
+```text
+S[i,j] = max(S[i-1,j-1] + character_score,
+             S[i-1,j] - gap,
+             S[i,j-1] - gap)
+```
+
+The first row and column account for leading gaps. Traceback starts at the bottom-right cell for a global alignment. In the illustrated example, the path from `(0,0)` to `(4,3)` includes one vertical step, pairing the query's `C` with a gap. Local Smith–Waterman instead permits a zero restart so a poorly scoring prefix need not become part of the selected region. See the [Needleman–Wunsch paper](https://bytes.usc.edu/cs270/docs/needleman-wunsch-1970.pdf) for the original global-alignment work; the example above verifies only the declared implementation and input.
+
+### Charge a gap run differently from separate gaps
+
+A linear gap cost charges `k * gap` for a run of `k` missing characters. Gotoh separates an overall score state `D`, vertical gap state `P` and horizontal gap state `Q`, allowing extension of an existing gap to differ from opening another. The retained implementation uses the convention `new_gap + k * continued_gap`, so a one-character run includes both terms. Waterman–Smith–Beyer considers possible gap lengths explicitly; its `_gap_func(k)` uses that same affine expression by default, or the selected quadratic/logarithmic expression. These are source conventions, not interchangeable parameter names from another library. The constructor table and returned-array table above describe the actual interface. [Gotoh's original paper](https://pubmed.ncbi.nlm.nih.gov/7166760/) explains the affine-gap approach.
+
+Substitution matrices replace the character comparison term, not the surrounding API. A minimal explicit alphabet makes the nested lookup visible:
 
 ```python
-from sequenceforge import needleman_wunsch
+from sequenceforge import NeedlemanWunsch
 
-print(needleman_wunsch.distance("ACTG","FHYU"))
-# 4
-print(needleman_wunsch.distance("ACTG","ACTG"))
-# 0
-print(needleman_wunsch.similarity("ACTG","FHYU"))
-# 0
-print(needleman_wunsch.similarity("ACTG","ACTG"))
-# 4
-print(needleman_wunsch.normalized_distance("ACTG","AATG"))
-# 0.25
-print(needleman_wunsch.normalized_similarity("ACTG","AATG"))
-# 0.75
-print(needleman_wunsch.align("BA","ABA"))
-# -BA
-# ABA
-print(needleman_wunsch.align("ACCG","ACG", all_alignments=True))
-# ["ACCG\nA-CG", "ACCG\nAC-G"]
-print(needleman_wunsch.matrix("AFTG","ACTG"))
-[[0. 2. 4. 6. 8.]
- [2. 0. 2. 4. 6.]
- [4. 2. 1. 3. 5.]
- [6. 4. 3. 1. 3.]
- [8. 6. 5. 3. 1.]]
- ```
-
-Needleman-Wunsch with scoring matrix
-
-- Details about scoring matrices can be found at [Biobase](https://github.com/lignum-vitae/biobase)
-- Custom scoring matrices also supported
-
-```py
-from sequenceforge import NeedlemanWunsch, needleman_wunsch
-from biobase.matrix import Blosum
-
-
-seq1 = "MENSDSLFKLLAEAKGK"
-seq2 = "MEQNSDIFKLAQK"
-
-print(needleman_wunsch.align(seq1, seq2))
-# ME-NSDSLFKLLAEAKGK
-# MEQNSD-IFK-L--A-QK
-
-needleman62 = NeedlemanWunsch(scoring_matrix=Blosum(62))
-print(needleman62.align(seq1, seq2))
-# ME-NSDSLFKLLAEAKGK
-# MEQNSD-IFK-LAQ---K
+matrix = {"A": {"A": 3, "C": -2}, "C": {"A": -2, "C": 3}}
+custom = NeedlemanWunsch(substitution_matrix=matrix, gap=3)
+assert custom.similarity("AC", "AC") == 6
 ```
 
+This toy matrix covers only `A` and `C`. Supply the complete alphabet for real inputs, and calibrate gap costs to that matrix. This example does not validate custom-score normalization or reproduce the protein examples' historical outputs.
 
-# Caveats
+### Trade a full matrix for recursive alignment
 
-> [!CAUTION]
-> Scoring for Gotoh and Water-Smith-Beyer may be incorrect if new gap and continued gap penalties are not adjusted when substitution matrices are in use.
-> It is recommended that the the penalties are adjusted so that they are harsher than the worst mismatch possible in your sequence for a give substitution matrix.
-> Refer to the `test_SubMatrix.py` file in the `tests` directory for an example.
+Hirschberg uses forward/backward score profiles and recursively splits the alignment problem. Its `_score` routine retains two score rows rather than a complete table. This is the divide-and-conquer idea described in [Hirschberg's paper](https://ics.uci.edu/~dhirschb/pubs/p341-hirschberg.pdf); it is not a benchmark or a claim that every allocation in this Python implementation has been measured. Here `.matrix` returns a full score array only for the small base case and a placeholder otherwise. Choose an aligner exposing a full matrix when inspecting every cell is the task.
 
-> [!NOTE]
-> The original LIPNS and MLIPNS only return 1 or 0 based on whether two sequences are similar or dissimilar respectively.
-> SequenceForge returns a similarity or distance percentage for `.similarity`, `.distance`, and their normalised counterparts.
-> `.is_similar` can be used to return the appropriate 1 or 0 if desired.
+### Separate motifs, progressive alignment and trees
 
+For `ACGT` and `AGT`, a common subsequence can be `AGT`, while a common substring must stay contiguous (the shared `GT`). A supersequence contains each input in order. These solve different tasks from a scored two-row alignment, and their helpers return different objects.
 
-Note that due to the fact that the Hamming distance does not allow for insertions or deletions, the "aligned sequence" that is returned is just the original sequences in a formatted string.
-This is due to the fact that actually aligning the two sequences using this algorithm would just lead to two lines of the query sequence.
-It should also be noted that the Hamming distance is intended to only be used with sequences of the same length.
+Feng–Doolittle first uses a selected pairwise method to build a distance matrix, then uses a guide tree to combine sequence profiles progressively. Changing that pairwise method or its scoring settings changes the guide information. The current `merge_profiles` aligns the first sequence of each profile as its representative and applies those gap patterns to all members; it does not optimize a full profile-to-profile score. Progressive alignment does not independently certify an optimal multiple alignment or evolutionary distance. The retained notebooks are historical examples, and their outputs were not regenerated by this documentation change.
 
-At the beginning of this project, I thought that the Levenshtein distance was an algorithm, but it is the end result that is being calculated with an approach such as Wagner-Fischer which uses Needleman-Wunsch-esque matrices to calculate the Levenshtein distance.
-Thus, the Levenshtein distance implementation has been switched to the Wagner-Fischer algorithm.
-Damerau-Levenshtein distance is found using the Lowrance-Wagner algorithm.
+### Further reading and retained provenance
+
+The original guide's [Lowrance–Wagner research article](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-019-2819-0), [Feng–Doolittle teaching notes](https://www.cs.auckland.ac.nz/compsci369s1c/lectures/DW-notes/lecture21.pdf), [LIPNS/MLIPNS paper](http://www.sial.iias.spb.su/files/386-386-1-PB.pdf) and [Hamann reference](https://modbase.compbio.ucsf.edu/pibase/suppinfo/supplementary_info.pdf) remain useful starting points. Algorithm names do not establish that this implementation has all properties of the cited method; in particular, the retained adjacent-swap implementation has the restriction noted above. [references.txt](../references.txt) separately retains the original code/scoring sources and author credits.
+
+## Caveats
+
+The implementation is preserved; the following are observed limits, not promises that every other input is correct:
+
+- The GlobalBase distance used by NeedlemanWunsch, Gotoh and WatermanSmithBeyer converts the raw score using an absolute value. With defaults, `gotoh.distance("A", "B")` is zero despite a raw score of −1. `NeedlemanWunsch(match=1, mismatch=4, gap=5).distance("A", "B")` is −3. Use raw scores carefully; do not assume metric properties.
+- WatermanSmithBeyer initializes leading-gap boundaries with the affine formula even when `gap_function="quadratic"` or `"log"` is selected. For example, `WatermanSmithBeyer(gap_function="quadratic").matrix("AA", "")[0][-1, 0]` is −5 while `_gap_func(2)` is −7. Do not assume consistent nonlinear gap scoring at sequence edges.
+- LocalBase normalization does not include the match reward. For example, `SmithWaterman(match=2).normalized_similarity("AA", "AA")` is 2. GotohLocal has a separate normalization implementation.
+- Hamming accepts equal-length strings or two integers for raw comparison. Strings are case-insensitive; mixed types raise `TypeError` and unequal string lengths raise `IndexError`. Integer raw similarity counts shared one bits. Integer normalization currently raises `TypeError`; empty-string normalization divides by zero.
+- `simple_matching_coefficient.matrix("A", "B")` returns `[[0.0, 1.0]]`: one row of match and mismatch counts. The repaired matrix layout is consistently `(1, 2)`; formerly successful all-match and empty calls returned `(1, 1)`, so callers that assume one column must adapt. SMC and Hamann scalar comparisons require nonempty inputs and delegate equal-length validation to Hamming.
+- Common-substring MSA normalization divides by zero for a list containing only empty strings. An empty list instead raises `ValueError` from `max`. Prefix and Postfix normalized methods explicitly reject empty strings with `ValueError`. Empty-input conventions are method-specific.
+- Feng–Doolittle strips and uppercases input, filters blank members, rejects all-blank/empty lists and returns a singleton string unchanged. Progressive alignment and tree helpers have not been independently validated for all profile, alphabet and matrix shapes.
+- Both FASTA parsing helpers currently produce inconsistent identifier prefixes for a single record versus multiple records. Normalize identifiers explicitly when combining those results.
+
+[Verification](VERIFICATION.md) records compatibility/parity evidence. Matched legacy errors are compatibility evidence, not independent proof of mathematical correctness. The [retained references](../references.txt) and [third-party notices](../THIRD_PARTY_NOTICES.md) preserve upstream credit and provenance.

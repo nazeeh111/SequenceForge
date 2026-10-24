@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="650" viewBox="0 0 640 650" role="img" aria-labelledby="title desc">
+<title id="title">Three matches, one gap: an inspectable global alignment</title>
+<desc id="desc">Needleman-Wunsch aligns ACGT with A-GT. Match reward 2, mismatch cost 1, gap cost 2. The 5 by 4 score matrix ends at 4; highlighted cells follow the returned alignment.</desc>
+<rect width="640" height="650" rx="14" fill="#111a32"/>
+<g font-family="ui-monospace, SFMono-Regular, Consolas, monospace" fill="#eaf0ff">
+<text x="36" y="45" font-size="14" fill="#a6baff">NEEDLEMAN–WUNSCH / GLOBAL ALIGNMENT</text>
+<text x="36" y="88" font-family="Arial,sans-serif" font-size="30" font-weight="700">Three matches. One gap.</text>
+<text x="68" y="145" font-size="34" fill="#95e5dc">A</text>
+<text x="124" y="145" font-size="34" fill="#95e5dc">C</text>
+<text x="180" y="145" font-size="34" fill="#95e5dc">G</text>
+<text x="236" y="145" font-size="34" fill="#95e5dc">T</text>
+<text x="68" y="187" font-size="34" fill="#95e5dc">A</text>
+<text x="124" y="187" font-size="34" fill="#efb27d">-</text>
+<text x="180" y="187" font-size="34" fill="#95e5dc">G</text>
+<text x="236" y="187" font-size="34" fill="#95e5dc">T</text>
+<text x="340" y="143" font-size="17">Score = 3 × 2 − 2 = 4</text>
+<text x="340" y="177" font-size="13" fill="#b9c6e8">One returned optimal alignment</text>
+<path d="M36 215H604" stroke="#334464"/>
+<text x="36" y="246" font-size="13" fill="#b9c6e8">Match +2 · mismatch −1 · gap −2</text>
+<text x="160.0" y="280" text-anchor="middle" font-size="21" fill="#b9c6e8">·</text>
+<text x="254.0" y="280" text-anchor="middle" font-size="21" fill="#b9c6e8">A</text>
+<text x="348.0" y="280" text-anchor="middle" font-size="21" fill="#b9c6e8">G</text>
+<text x="442.0" y="280" text-anchor="middle" font-size="21" fill="#b9c6e8">T</text>
+<text x="86" y="325" text-anchor="middle" font-size="21" fill="#b9c6e8">·</text>
+<rect x="113" y="291" width="94" height="52" fill="#254d65" stroke="#79d4cd"/>
+<text x="160.0" y="325" text-anchor="middle" font-size="24">0</text>
+<rect x="207" y="291" width="94" height="52" fill="#192640" stroke="#35445f"/>
+<text x="254.0" y="325" text-anchor="middle" font-size="24">-2</text>
+<rect x="301" y="291" width="94" height="52" fill="#192640" stroke="#35445f"/>
+<text x="348.0" y="325" text-anchor="middle" font-size="24">-4</text>
+<rect x="395" y="291" width="94" height="52" fill="#192640" stroke="#35445f"/>
+<text x="442.0" y="325" text-anchor="middle" font-size="24">-6</text>
+<text x="86" y="377" text-anchor="middle" font-size="21" fill="#b9c6e8">A</text>
+<rect x="113" y="343" width="94" height="52" fill="#192640" stroke="#35445f"/>
+<text x="160.0" y="377" text-anchor="middle" font-size="24">-2</text>
+<rect x="207" y="343" width="94" height="52" fill="#254d65" stroke="#79d4cd"/>
+<text x="254.0" y="377" text-anchor="middle" font-size="24">2</text>
+<rect x="301" y="343" width="94" height="52" fill="#192640" stroke="#35445f"/>
+<text x="348.0" y="377" text-anchor="middle" font-size="24">0</text>
+<rect x="395" y="343" width="94" height="52" fill="#192640" stroke="#35445f"/>
+<text x="442.0" y="377" text-anchor="middle" font-size="24">-2</text>
+<text x="86" y="429" text-anchor="middle" font-size="21" fill="#b9c6e8">C</text>
+<rect x="113" y="395" width="94" height="52" fill="#192640" stroke="#35445f"/>
+<text x="160.0" y="429" text-anchor="middle" font-size="24">-4</text>
+<rect x="207" y="395" width="94" height="52" fill="#254d65" stroke="#79d4cd"/>
+<text x="254.0" y="429" text-anchor="middle" font-size="24">0</text>
+<rect x="301" y="395" width="94" height="52" fill="#192640" stroke="#35445f"/>
+<text x="348.0" y="429" text-anchor="middle" font-size="24">1</text>
+<rect x="395" y="395" width="94" height="52" fill="#192640" stroke="#35445f"/>
+<text x="442.0" y="429" text-anchor="middle" font-size="24">-1</text>
+<text x="86" y="481" text-anchor="middle" font-size="21" fill="#b9c6e8">G</text>
+<rect x="113" y="447" width="94" height="52" fill="#192640" stroke="#35445f"/>
+<text x="160.0" y="481" text-anchor="middle" font-size="24">-6</text>
+<rect x="207" y="447" width="94" height="52" fill="#192640" stroke="#35445f"/>
+<text x="254.0" y="481" text-anchor="middle" font-size="24">-2</text>
+<rect x="301" y="447" width="94" height="52" fill="#254d65" stroke="#79d4cd"/>
+<text x="348.0" y="481" text-anchor="middle" font-size="24">2</text>
+<rect x="395" y="447" width="94" height="52" fill="#192640" stroke="#35445f"/>
+<text x="442.0" y="481" text-anchor="middle" font-size="24">0</text>
+<text x="86" y="533" text-anchor="middle" font-size="21" fill="#b9c6e8">T</text>
+<rect x="113" y="499" width="94" height="52" fill="#192640" stroke="#35445f"/>
+<text x="160.0" y="533" text-anchor="middle" font-size="24">-8</text>
+<rect x="207" y="499" width="94" height="52" fill="#192640" stroke="#35445f"/>
+<text x="254.0" y="533" text-anchor="middle" font-size="24">-4</text>
+<rect x="301" y="499" width="94" height="52" fill="#192640" stroke="#35445f"/>
+<text x="348.0" y="533" text-anchor="middle" font-size="24">0</text>
+<rect x="395" y="499" width="94" height="52" fill="#254d65" stroke="#79d4cd"/>
+<text x="442.0" y="533" text-anchor="middle" font-size="24">4</text>
+<text x="36" y="590" font-size="13" fill="#a6baff">Rows: ACGT · columns: AGT · · marks the empty prefix</text>
+<text x="36" y="617" font-size="13" fill="#a6baff">Highlighted cells follow the returned alignment.</text>
+</g></svg>
