@@ -472,9 +472,10 @@ class Hamann:
 
 class SimpleMatchingCoefficient:
     def __call__(self, query_seq: str, subject_seq: str):
+        """Return one row containing match and mismatch counts, in that order."""
         query_seq = query_seq.upper()
         subject_seq = subject_seq.upper()
-        matrix = numpy.zeros((1, 1))
+        matrix = numpy.zeros((1, 2))
         for i in range(len(query_seq)):
             if query_seq[i] == subject_seq[i]:
                 matrix[0, 0] += 1

@@ -32,7 +32,7 @@ Classes and instances below are exported by `sequenceforge`. All listed pairwise
 | `LIPNS` | `lipns` | One array |
 | `MLIPNS` | `mlipns` | One array |
 | `Hamann` | `hamann` | One array |
-| `SimpleMatchingCoefficient` | `simple_matching_coefficient` | Present, but mismatch cases can raise `IndexError` |
+| `SimpleMatchingCoefficient` | `simple_matching_coefficient` | One-row match/mismatch count matrix; scalar comparisons require nonempty, equal-length inputs |
 | `LengthRatio` | `length_ratio` | One array |
 | `Prefix` | `prefix` | One array |
 | `Postfix` | `postfix` | One array |
@@ -157,7 +157,7 @@ The implementation is preserved; the following are observed limits, not promises
 - WatermanSmithBeyer initializes leading-gap boundaries with the affine formula even when `gap_function="quadratic"` or `"log"` is selected. For example, `WatermanSmithBeyer(gap_function="quadratic").matrix("AA", "")[0][-1, 0]` is −5 while `_gap_func(2)` is −7. Do not assume consistent nonlinear gap scoring at sequence edges.
 - LocalBase normalization does not include the match reward. For example, `SmithWaterman(match=2).normalized_similarity("AA", "AA")` is 2. GotohLocal has a separate normalization implementation.
 - Hamming accepts equal-length strings or two integers for raw comparison. Strings are case-insensitive; mixed types raise `TypeError` and unequal string lengths raise `IndexError`. Integer raw similarity counts shared one bits. Integer normalization currently raises `TypeError`; empty-string normalization divides by zero.
-- `simple_matching_coefficient.matrix("A", "B")` raises `IndexError`. SMC and Hamann scalar comparisons require nonempty inputs and delegate equal-length validation to Hamming.
+- `simple_matching_coefficient.matrix("A", "B")` returns `[[0.0, 1.0]]`: one row of match and mismatch counts. The repaired matrix layout is consistently `(1, 2)`; formerly successful all-match and empty calls returned `(1, 1)`, so callers that assume one column must adapt. SMC and Hamann scalar comparisons require nonempty inputs and delegate equal-length validation to Hamming.
 - Common-substring MSA normalization divides by zero for a list containing only empty strings. An empty list instead raises `ValueError` from `max`. Prefix and Postfix normalized methods explicitly reject empty strings with `ValueError`. Empty-input conventions are method-specific.
 - Feng–Doolittle strips and uppercases input, filters blank members, rejects all-blank/empty lists and returns a singleton string unchanged. Progressive alignment and tree helpers have not been independently validated for all profile, alphabet and matrix shapes.
 - Both FASTA parsing helpers currently produce inconsistent identifier prefixes for a single record versus multiple records. Normalize identifiers explicitly when combining those results.
