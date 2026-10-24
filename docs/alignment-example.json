@@ -1,0 +1,83 @@
+{
+  "base": "9c5f888eaaba137253a9f7211a203d70e007c31a",
+  "mode": "Actual unchanged base/edit modules loaded directly with installed NumPy; bypasses package initialization and does not verify installed package/Bio integration.",
+  "query": "ACGT",
+  "subject": "AGT",
+  "alignment": "ACGT\nA-GT",
+  "score": 4.0,
+  "parameters": {
+    "match": 2,
+    "mismatch": 1,
+    "gap": 2
+  },
+  "scores": [
+    [
+      0.0,
+      -2.0,
+      -4.0,
+      -6.0
+    ],
+    [
+      -2.0,
+      2.0,
+      0.0,
+      -2.0
+    ],
+    [
+      -4.0,
+      0.0,
+      1.0,
+      -1.0
+    ],
+    [
+      -6.0,
+      -2.0,
+      2.0,
+      0.0
+    ],
+    [
+      -8.0,
+      -4.0,
+      0.0,
+      4.0
+    ]
+  ],
+  "pointers": [
+    [
+      4.0,
+      4.0,
+      4.0,
+      4.0
+    ],
+    [
+      3.0,
+      2.0,
+      4.0,
+      4.0
+    ],
+    [
+      3.0,
+      3.0,
+      2.0,
+      6.0
+    ],
+    [
+      3.0,
+      3.0,
+      2.0,
+      6.0
+    ],
+    [
+      3.0,
+      3.0,
+      3.0,
+      2.0
+    ]
+  ],
+  "source_hashes": {
+    "base.py": "ed31c9f907b980f6751868c6e7093c83d61a2eaa2be5228adba514d6468b72d5",
+    "edit.py": "0f228562a4e1fb5bfded1ab78eee1fce9c5addc82b1f6c3fbb53a71b1a8154be"
+  },
+  "proposal_base": "490e2c16e119adf904662271275da01ebdb5a1a8",
+  "independent_review": "Scalar score recurrence, all displayed cells, returned alignment and highlighted path verified against this actual public head; computational source hashes are identical to the proposal base."
+}
